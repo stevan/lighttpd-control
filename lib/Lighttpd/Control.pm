@@ -64,8 +64,8 @@ sub post_startup {
     my $self = shift;
     inner();
     until ($self->is_server_running) {
-        $self->log("\r... waiting for server to start");
-    }
+        $self->log("... waiting for server to start");
+    }    
 }
 
 sub pre_shutdown { inner() }
