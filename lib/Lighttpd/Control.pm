@@ -3,13 +3,18 @@ use Moose;
 use MooseX::Types::Path::Class;
 use Path::Class;
 
-our $VERSION   = '0.01';
+our $VERSION   = '0.02';
 our $AUTHORITY = 'cpan:STEVAN';
 
 has 'config_file' => (
     is       => 'rw',
     isa      => 'Path::Class::File',
     coerce   => 1,
+    trigger  => sub {
+        my $self = shift;
+        $self->_clear_pid_file;
+        $self->_clear_server_pid;
+    }
 );
 
 has 'binary_path' => (
@@ -17,23 +22,32 @@ has 'binary_path' => (
     isa     => 'Path::Class::File',
     coerce  => 1,
     lazy    => 1,
-    builder => '_find_binary_path'
+    builder => '_find_binary_path',
+    clearer => '_clear_binary_path',
 );
 
 has 'pid_file' => (
-    is      => 'rw',
-    isa     => 'Path::Class::File',
-    coerce  => 1,
-    lazy    => 1,
-    builder => '_find_pid_file',
+    is        => 'rw',
+    isa       => 'Path::Class::File',
+    coerce    => 1,
+    lazy      => 1,
+    builder   => '_find_pid_file',
+    clearer   => '_clear_pid_file',
+    predicate => 'has_pid_file',
+    trigger   => sub {
+        my $self = shift;
+        $self->_clear_server_pid;
+    }
 );
 
 has 'server_pid' => (
-    init_arg => undef,
-    is       => 'ro',
-    isa      => 'Int',
-    lazy     => 1,
-    builder  => '_find_server_pid',
+    init_arg  => undef,
+    is        => 'ro',
+    isa       => 'Int',
+    lazy      => 1,
+    builder   => '_find_server_pid',
+    clearer   => '_clear_server_pid',
+    predicate => 'has_server_pid',
 );
 
 sub log { shift; warn @_, "\n" }
@@ -41,11 +55,26 @@ sub log { shift; warn @_, "\n" }
 ## ---------------------------------
 ## events
 
-sub pre_startup   { inner() }
-sub post_startup  { inner() }
+sub pre_startup { 
+    my $self = shift;
+    $self->_clear_server_pid;    
+    inner();
+}
+sub post_startup { 
+    my $self = shift;
+    inner();
+    until ($self->is_server_running) {
+        $self->log("\r... waiting for server to start");
+    }
+}
 
-sub pre_shutdown  { inner() }
-sub post_shutdown { inner() }
+sub pre_shutdown { inner() }
+
+sub post_shutdown { 
+    my $self = shift;
+    inner();
+    $self->_clear_server_pid;    
+}
 
 ## ---------------------------------
 
@@ -231,6 +260,9 @@ release with only the bare bones functionality we needed, future
 releases will surely include more functionality. Suggestions and 
 crazy ideas welcomed, especially in the form of patches with tests.
 
+Also note the recently uploaded L<Nginx::Control> and L<Sphinx::Control> 
+both of which are based on this module but for different servers. 
+
 =head1 ATTRIBUTES
 
 =over 4
@@ -322,11 +354,20 @@ in the test suite).
 
 =item B<pre_startup>
 
+This will clear the I<server_pid> attribute before doing anything
+else so that it can start with a clean slate.
+
 =item B<post_startup>
+
+This will initialize the L<server_pid> attribute and block while 
+the server itself is starting up (and print a nice log message too).
 
 =item B<pre_shutdown>
 
 =item B<post_shutdown>
+
+This will clear the I<server_pid> attribute as the last thing it does
+so that there is not stale data in the instance.
 
 =back
 

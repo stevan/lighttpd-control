@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 13;
 use Test::Exception;
 use Test::WWW::Mechanize;
 
@@ -24,10 +24,17 @@ skip "No lighttpd installed (or at least none found), why are you testing this a
 
 ok(!$ctl->is_server_running, '... the server process is not yet running');
 
+ok($ctl->has_pid_file, '... no pid file yet');
+is($ctl->pid_file->basename, 'lighttpd.control.pid', '... got the pid file');
+
+ok(!$ctl->has_server_pid, '... no pid yet');
+
 $ctl->start;
 
 diag "Wait a moment for lighttpd to start";
 sleep(2);
+
+ok($ctl->has_server_pid, '... got pid now');
 
 ok($ctl->is_server_running, '... the server process is now running');
 
@@ -36,6 +43,8 @@ $mech->get_ok('http://localhost:3333/' . $ctl->pid_file->basename);
 $mech->content_contains($ctl->server_pid, '... got the content we expected');
 
 $ctl->stop;
+
+ok(!$ctl->has_server_pid, '... no longer have a pid');
 
 diag "Wait a moment for Lighttpd to stop";
 sleep(2);

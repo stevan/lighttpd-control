@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::WWW::Mechanize;
 
@@ -21,6 +21,7 @@ SKIP: {
 skip "No lighttpd installed (or at least none found), why are you testing this anyway?", 6 
     unless eval { $ctl->binary_path };
 
+ok(!$ctl->has_pid_file, '... no pid file yet');
 ok(!$ctl->is_server_running, '... the server process is not yet running');
 
 $ctl->start;
@@ -28,6 +29,7 @@ $ctl->start;
 diag "Wait a moment for lighttpd to start";
 sleep(2);
 
+ok($ctl->has_pid_file, '... got pid file now');
 ok($ctl->is_server_running, '... the server process is now running');
 
 my $mech = Test::WWW::Mechanize->new;
