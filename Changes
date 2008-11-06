@@ -1,6 +1,6 @@
 Revision history for Perl extension Lighttpd-Control
 
-0.02 Monday, Oct. 13, 2008
+0.02 Thursday, Nov. 6, 2008
     - changing the config file now clears the 
       pid-file and server-pid slots
     - changing the pid-file slot will clear the
