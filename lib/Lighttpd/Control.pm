@@ -142,7 +142,7 @@ sub _find_binary_path {
 
     return $lighttpd if -x $lighttpd;
 
-    for my $prefix (qw(/usr /usr/local /opt/local /sw)) {
+    for my $prefix (qw(/usr /usr/local /opt/local /sw /usr/pkg)) {
         for my $bindir (qw(bin sbin)) {
             my $lighttpd = Path::Class::File->new($prefix, $bindir, 'lighttpd');
             return $lighttpd if -x $lighttpd;
